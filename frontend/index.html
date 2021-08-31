@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.3.4/vue.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>Yahtzee Game</title>
+    <script src="frontend.js"></script>
+</head>
+
+<body class="bg--light-gray">
+
+    <div id="vue" class="grd">
+        <div class="grd-row">
+            <div class="grd-row-col-6 bg--light-gray m1"></div>
+        </div>
+        <div class="grd-row" id="jatsi_main">
+            <div class="grd-row-col-1-6--md" id="jatsi_left"></div>
+            <div class="grd-row-col-4-6--md bg--white" id="jatsi_center">
+
+                <div class="grd-row" v-if="(gameStarted==false ) || (endGameSituation==true )">
+
+                    <div class="m1 grd-row-col-4-6" v-if="numberOfPlayers>-1 && player1TypeInput=='N'">
+                        <label for="player1NameInput">{{ ui.player1Name }}:</label>
+                        <input type="text" id="player1NameInput" v-model="player1NameInput" maxlength="50">
+                    </div>
+
+                    <div class="m1 grd-row-col-4-6" v-if="numberOfPlayers>-1 && player1TypeInput=='Y'">
+                        <label for="player1NameInput">{{ ui.player1Name }}:</label><br>
+                        {{ player1NameInput }}
+                    </div>
+
+                </div>
+
+                <div class="grd-row" v-if="(gameStarted==false ) || (endGameSituation==true )">
+
+                    <button class="btn--blue m1" v-on:click="clickNewGame(0,0)"
+                        v-if="(gameStarted==false || endGameSituation==true)  && ((player1NameInput!='' && numberOfPlayers==0) || player1NameInput!='' && (player1NameInput!='' ))">
+                        {{ui.newGame }}
+                    </button>
+
+                </div>
+
+                <!-- clickable dice to stop them from rolling  -->
+
+                <table class="m1" v-if="gameStarted==true  && endGameSituation==false" v-bind:style="disableClick">
+                   
+                    <tr>
+
+                        <td><button v-if="dice1Selected==false" v-on:click="dice1Selected=true" class="btn">{{ dice1
+                                }}</button><button v-if="dice1Selected==true" v-on:click="dice1Selected=false"
+                                class="btn--blue">{{ dice1 }}</button></td>
+                        <td><button v-if="dice2Selected==false" v-on:click="dice2Selected=true" class="btn">{{ dice2
+                                }}</button><button v-if="dice2Selected==true" v-on:click="dice2Selected=false"
+                                class="btn--blue">{{ dice2 }}</button></td>
+                        <td><button v-if="dice3Selected==false" v-on:click="dice3Selected=true" class="btn">{{ dice3
+                                }}</button><button v-if="dice3Selected==true" v-on:click="dice3Selected=false"
+                                class="btn--blue">{{ dice3 }}</button></td>
+                        <td><button v-if="dice4Selected==false" v-on:click="dice4Selected=true" class="btn">{{ dice4
+                                }}</button><button v-if="dice4Selected==true" v-on:click="dice4Selected=false"
+                                class="btn--blue">{{ dice4 }}</button></td>
+                        <td><button v-if="dice5Selected==false" v-on:click="dice5Selected=true" class="btn">{{ dice5
+                                }}</button><button v-if="dice5Selected==true" v-on:click="dice5Selected=false"
+                                class="btn--blue">{{ dice5 }}</button></td>
+                    </tr>
+
+                </table>
+
+                <!-- Round and throw number information to player. -->
+                <div class="m1" v-if="gameStarted==true  && endGameSituation==false">
+                    <p>{{ ui.player }}: {{ activePlayerName }}
+                    <p>{{ ui.round }}: {{ activeRoundNumber }} / {{ ui.totalRounds }}</p>
+                    <p>{{ ui.throwRound }}: {{ activeThrowNumber }} / {{ ui.totalThrows }}</p>
+                </div>
+
+                <button class="btn--green m1" v-on:click="clickThrowDice(gameId,activePlayer)"
+                    v-if=" gameStarted==true  && activeThrowNumber!=3 && endGameSituation==false">{{ ui.throwDice
+                    }}</button>
+
+                <!-- The game table. Player can select which combination to choose to get points. -->
+                <table class="m1" v-if="gameStarted==true " v-bind:style="disableClick">
+                    <tr>
+                        <th></th>
+                        <th v-for="playerName in playerNames">{{ playerName }}</th>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'ones')">{{ ui.ones
+                                }}</button></td>
+                        <td v-for="ones in onesValue">{{ ones }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'twos')">{{ ui.twos
+                                }}</button></td>
+                        <td v-for="twos in twosValue">{{ twos }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'threes')">{{ ui.threes
+                                }}</button></td>
+                        <td v-for="threes in threesValue">{{ threes }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'fours')">{{ ui.fours
+                                }}</button></td>
+                        <td v-for="fours in foursValue">{{ fours }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'fives')">{{ ui.fives
+                                }}</button></td>
+                        <td v-for="fives in fivesValue">{{ fives }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'sixes')">{{ ui.sixes
+                                }}</button></td>
+                        <td v-for="sixes in sixesValue">{{ sixes }}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="bold m1">{{ ui.bonus }}</div>
+                        </td>
+                        <td class="bold" v-for="bonus in bonusValue">{{ bonus }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'onePair')">{{ ui.onePair
+                                }}</button></td>
+                        <td v-for="onePair in onePairValue">{{ onePair }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'twoPairs')">{{ ui.twoPairs
+                                }}</button></td>
+                        <td v-for="twoPairs in twoPairsValue">{{ twoPairs }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'threeOfAKind')">{{
+                                ui.threeOfAKind }}</button></td>
+                        <td v-for="threeOfAKind in threeOfAKindValue">{{ threeOfAKind }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'fourOfAKind')">{{
+                                ui.fourOfAKind }}</button></td>
+                        <td v-for="fourOfAKind in fourOfAKindValue">{{ fourOfAKind }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'smallStraight')">{{
+                                ui.smallStraight }}</button></td>
+                        <td v-for="smallStraight in smallStraightValue">{{ smallStraight }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'largeStraight')">{{
+                                ui.largeStraight }}</button></td>
+                        <td v-for="largeStraight in largeStraightValue">{{ largeStraight }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'fullHouse')">{{
+                                ui.fullHouse }}</button></td>
+                        <td v-for="fullHouse in fullHouseValue">{{ fullHouse }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'chance')">{{ ui.chance
+                                }}</button></td>
+                        <td v-for="chance in chanceValue">{{ chance }}</td>
+                    </tr>
+                    <tr>
+                        <td><button class="btn--link" v-on:click="clickEndRound(activeGameId,'yatzy')">{{ ui.yatzy
+                                }}</button></td>
+                        <td v-for="yatzy in yatzyValue">{{ yatzy }}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="bold m1">{{ ui.total }}</div>
+                        </td>
+                        <td class="bold" v-for="total in totalValue">{{ total}}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="grd-row-col-1-6--md" id="jatsi_right"></div>
+        </div>
+        <div class="grd-row">
+            <div class="grd-row-col-6 bg--light-gray m1"></div>
+        </div>
+    </div>
+</body>
+
+</html>
